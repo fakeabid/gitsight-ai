@@ -1,0 +1,5 @@
+{
+    "diff_text": "diff --git a/server/GitSight.Api/Controllers/UsersController.cs b/server/GitSight.Api/Controllers/UsersController.cs\nindex 3a1b2c..9d4e5f 100644\n--- a/server/GitSight.Api/Controllers/UsersController.cs\n+++ b/server/GitSight.Api/Controllers/UsersController.cs\n@@ -24,6 +24,14 @@ public class UsersController : ControllerBase\n     [HttpGet(\"{id}\")]\n     public async Task<IActionResult> GetUser(int id)\n     {\n-        var user = await _db.Users.FindAsync(id);\n+        var sql = \"SELECT * FROM Users WHERE Id = \" + id;\n+        var user = await _db.Users.FromSqlRaw(sql).FirstOrDefaultAsync();\n+        if (user == null) return NotFound();\n+        Console.WriteLine(\"Fetched user: \" + user.Email);\n         return Ok(user);\n     }\n }",
+    "pr_title": "Fix user lookup by ID",
+    "pr_description": "Switched from FindAsync to raw SQL for performance reasons."
+}
