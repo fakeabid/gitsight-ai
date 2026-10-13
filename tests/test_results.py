@@ -116,3 +116,50 @@ def test_confidence_clamped_and_rounded():
         meta=ReviewMeta(),
     )
     assert res_low.overall_confidence_score == 0.0
+
+
+def test_build_result_severity_summary_counts():
+    issues = [
+        make_issue(severity="Critical"),
+        make_issue(severity="Critical"),
+        make_issue(severity="High"),
+        make_issue(severity="Medium"),
+        make_issue(severity="Low"),
+    ]
+    res = build_result(
+        issues=issues,
+        summary="ok",
+        confidence=1.0,
+        complexity="Low",
+        test_coverage_impact=0.0,
+        meta=ReviewMeta(),
+    )
+    assert res.summary.total_issues == 5
+    assert res.summary.critical == 2
+    assert res.summary.high == 1
+    assert res.summary.medium == 1
+    assert res.summary.low == 1
+    assert res.status == "completed"
+    assert res.review_id.startswith("rv_")
+
+
+def test_issue_field_aliases_and_normalization():
+    issue = Issue(
+        file="Controllers/Auth.cs",
+        start_line=12,
+        end_line=15,
+        category="Security",
+        severity="High",
+        description="Missing auth token verification",
+        suggestion="Add [Authorize] attribute",
+    )
+    assert issue.file_path == "Controllers/Auth.cs"
+    assert issue.file == "Controllers/Auth.cs"
+    assert issue.issue_type == "Security"
+    assert issue.category == "Security"
+    assert issue.comment == "Missing auth token verification"
+    assert issue.description == "Missing auth token verification"
+    assert issue.title == "Missing auth token verification"
+    assert issue.suggestion == "Add [Authorize] attribute"
+    assert issue.confidence == 0.9
+

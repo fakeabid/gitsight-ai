@@ -104,3 +104,35 @@ async def test_max_concurrency_is_respected(settings):
     service_4 = ReviewService(graph=graph_4, settings=s_4)
     await service_4.review(ReviewRequest(pr_title="PR", diff=diff))
     assert llm_4.max_in_flight > 2
+
+
+async def test_all_chunks_failed_graceful_mode_returns_failed_result(settings):
+    result = build_result(
+        issues=[],
+        summary="failed",
+        confidence=0.0,
+        complexity="Low",
+        test_coverage_impact=0.0,
+        meta=ReviewMeta(chunk_count=2, failed_chunks=[1, 2]),
+    )
+    graceful_settings = settings.model_copy(update={"graceful_failure": True})
+    service = ReviewService(graph=FakeResultGraph(result), settings=graceful_settings)
+    req = ReviewRequest(pr_title="PR", diff="diff --git a/a b/a\n")
+    res = await service.review(req)
+    assert res.status == "failed"
+    assert res.error_code == "AI_TEMPORARILY_UNAVAILABLE"
+    assert res.retryable is True
+
+
+async def test_timeout_graceful_mode_returns_failed_result(settings):
+    timeout_settings = settings.model_copy(
+        update={"review_timeout_seconds": 1, "graceful_failure": True}
+    )
+    graph = DelayGraph(delay=2.0)
+    service = ReviewService(graph=graph, settings=timeout_settings)
+    req = ReviewRequest(pr_title="PR", diff="diff --git a/a b/a\n")
+    res = await service.review(req)
+    assert res.status == "failed"
+    assert res.error_code == "AI_TIMEOUT"
+    assert res.retryable is True
+

@@ -11,7 +11,12 @@ _api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 def require_api_key(request: Request, provided: str | None = Security(_api_key_header)) -> None:
     expected = request.app.state.settings.service_api_key.get_secret_value()
-    if not provided or not secrets.compare_digest(provided.encode(), expected.encode()):
+    token = provided
+    if not token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header[7:].strip()
+    if not token or not secrets.compare_digest(token.encode(), expected.encode()):
         raise UnauthorizedError("Invalid or missing API key.")
 
 

@@ -1,9 +1,11 @@
 """Merging, ordering and counting. The single source of truth for ReviewResult counts."""
 
+import uuid
 from collections.abc import Iterable
+from typing import Literal
 
 from app.schemas.common import COMPLEXITY_ORDER, SEVERITY_ORDER, Complexity
-from app.schemas.review import Issue, ReviewMeta, ReviewResult
+from app.schemas.review import Issue, IssueSeveritySummary, ReviewMeta, ReviewResult
 
 
 def dedupe_issues(issues: Iterable[Issue]) -> list[Issue]:
@@ -37,11 +39,31 @@ def build_result(
     complexity: Complexity,
     test_coverage_impact: float,
     meta: ReviewMeta,
+    review_id: str | None = None,
+    status: Literal["completed", "failed", "queued", "processing"] = "completed",
+    error_code: str | None = None,
+    retryable: bool = False,
 ) -> ReviewResult:
     def count(kind: str) -> int:
         return sum(1 for issue in issues if issue.issue_type == kind)
 
+    def count_severity(sev: str) -> int:
+        return sum(1 for issue in issues if issue.severity.lower() == sev.lower())
+
+    summary_counts = IssueSeveritySummary(
+        total_issues=len(issues),
+        critical=count_severity("Critical"),
+        high=count_severity("High"),
+        medium=count_severity("Medium"),
+        low=count_severity("Low"),
+    )
+
     return ReviewResult(
+        review_id=review_id or f"rv_{uuid.uuid4().hex[:12]}",
+        status=status,
+        error_code=error_code,
+        retryable=retryable,
+        summary=summary_counts,
         issues=issues,
         executive_summary=summary,
         overall_confidence_score=round(min(1.0, max(0.0, confidence)), 2),

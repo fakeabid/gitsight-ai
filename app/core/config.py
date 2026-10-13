@@ -76,6 +76,7 @@ class Settings(BaseSettings):
     chunk_max_retries: int = Field(default=2, ge=0, le=5)
     retry_backoff_seconds: float = Field(default=2.0, ge=0.0)
     review_timeout_seconds: int = Field(default=90, ge=10)
+    graceful_failure: bool = Field(default=False)
 
     @field_validator("gemini_fallback_models", "noise_patterns", mode="before")
     @classmethod

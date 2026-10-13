@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import logging
 import re
 from collections.abc import Awaitable, Callable
@@ -35,7 +36,7 @@ def build_prompt(state: ChunkState) -> dict:
 
 
 def make_call_llm(llm: Any, settings: Settings) -> Callable[[ChunkState], Awaitable[dict]]:
-    """`llm` is any object with `async ainvoke(messages)` returning {"parsed", "parsing_error", ...}."""
+    """`llm` is any runnable with `async ainvoke(messages)` returning structured dict."""
 
     async def call_llm(state: ChunkState) -> dict:
         attempts = state.get("attempts", 0) + 1
@@ -43,15 +44,18 @@ def make_call_llm(llm: Any, settings: Settings) -> Callable[[ChunkState], Awaita
         if attempts > 1 and settings.retry_backoff_seconds > 0:
             backoff = settings.retry_backoff_seconds * (attempts - 1)
             prev_err = state.get("error") or ""
-            if "RESOURCE_EXHAUSTED" in prev_err or "RateLimit" in prev_err or "retry in" in prev_err:
+            is_rate_limit = (
+                "RESOURCE_EXHAUSTED" in prev_err
+                or "RateLimit" in prev_err
+                or "retry in" in prev_err
+            )
+            if is_rate_limit:
                 match = re.search(r"retry in ([\d\.]+)s", prev_err) or re.search(
                     r"retryDelay['\":\s]+(\d+)", prev_err
                 )
                 if match:
-                    try:
+                    with contextlib.suppress(ValueError):
                         backoff = max(backoff, min(float(match.group(1)) + 1.0, 40.0))
-                    except ValueError:
-                        pass
                 else:
                     backoff = max(backoff, 10.0)
             logger.info("Chunk %d: waiting %.1fs before attempt %d", index, backoff, attempts)

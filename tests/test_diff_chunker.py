@@ -52,10 +52,14 @@ def test_real_code_is_not_noise(path):
 
 
 def test_noise_and_binary_files_are_reported_not_reviewed():
+    binary_diff = (
+        "diff --git a/img.bin b/img.bin\nindex 1..2 100644\n"
+        "Binary files a/img.bin and b/img.bin differ\n"
+    )
     diff = (
         make_new_file_diff("src/app.py", ["print('x')"])
         + make_new_file_diff("package-lock.json", ["{}"])
-        + "diff --git a/img.bin b/img.bin\nindex 1..2 100644\nBinary files a/img.bin and b/img.bin differ\n"
+        + binary_diff
     )
     result = build_chunks(diff, noise_patterns=NOISE, max_chunk_chars=15_000, max_total_chunks=5)
     assert [c.file_paths for c in result.chunks] == [("src/app.py",)]
@@ -173,6 +177,8 @@ def test_real_sample_diff_loses_no_added_line():
     assert not result.skipped and len(result.chunks) >= 2  # 25 KB does not fit one 15 KB chunk
 
     def added(text: str) -> int:
-        return sum(1 for l in text.splitlines() if l.startswith("+") and not l.startswith("+++"))
+        return sum(
+            1 for line in text.splitlines() if line.startswith("+") and not line.startswith("+++")
+        )
 
     assert added("\n".join(c.text for c in result.chunks)) == added(diff)

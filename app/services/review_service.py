@@ -16,9 +16,11 @@ class ReviewService:
 
     async def review(self, request: ReviewRequest) -> ReviewResult:
         if len(request.diff) > self._settings.max_diff_chars:
-            raise PayloadTooLargeError(
-                f"Diff has {len(request.diff)} characters; the limit is {self._settings.max_diff_chars}."
+            msg = (
+                f"Diff has {len(request.diff)} characters; "
+                f"the limit is {self._settings.max_diff_chars}."
             )
+            raise PayloadTooLargeError(msg)
         initial = {
             "pr_title": request.pr_title,
             "pr_description": request.pr_description,
@@ -31,6 +33,16 @@ class ReviewService:
                 timeout=self._settings.review_timeout_seconds,
             )
         except TimeoutError as exc:
+            if request.graceful_failure or self._settings.graceful_failure:
+                logger.error(
+                    "Review timed out after %ds; returning graceful failure",
+                    self._settings.review_timeout_seconds,
+                )
+                return ReviewResult.failure(
+                    error_code="AI_TIMEOUT",
+                    message=f"Review exceeded {self._settings.review_timeout_seconds}s.",
+                    retryable=True,
+                )
             raise ReviewTimeoutError(
                 f"Review exceeded {self._settings.review_timeout_seconds}s."
             ) from exc
@@ -38,6 +50,16 @@ class ReviewService:
         result: ReviewResult = final["result"]
         meta = result.meta
         if meta.chunk_count > 0 and len(meta.failed_chunks) == meta.chunk_count:
+            if request.graceful_failure or self._settings.graceful_failure:
+                logger.error(
+                    "All %d chunk(s) failed; returning graceful failure", meta.chunk_count
+                )
+                return ReviewResult.failure(
+                    error_code="AI_TEMPORARILY_UNAVAILABLE",
+                    message="The language model could not review any part of the diff.",
+                    retryable=True,
+                    meta=meta,
+                )
             raise AllChunksFailedError("The language model could not review any part of the diff.")
         logger.info(
             "Review done: %d issue(s), partial=%s, chunks=%d",

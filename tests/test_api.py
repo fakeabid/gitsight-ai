@@ -56,10 +56,12 @@ def test_optional_pr_description_omitted_returns_200(settings):
 
 def test_diff_text_alias_accepted(settings):
     body_diff_text = {"pr_title": "t", "diff_text": "diff --git a/a b/a\n"}
-    assert client(settings).post("/v1/reviews", json=body_diff_text, headers=HEADERS).status_code == 200
+    res = client(settings).post("/v1/reviews", json=body_diff_text, headers=HEADERS)
+    assert res.status_code == 200
 
     body_diff_text_camel = {"prTitle": "t", "diffText": "diff --git a/a b/a\n"}
-    assert client(settings).post("/v1/reviews", json=body_diff_text_camel, headers=HEADERS).status_code == 200
+    res_camel = client(settings).post("/v1/reviews", json=body_diff_text_camel, headers=HEADERS)
+    assert res_camel.status_code == 200
 
 
 
@@ -97,3 +99,57 @@ def test_domain_errors_map_to_http(settings, error, status, code):
     assert response.status_code == status and response.json() == {
         "error": {"code": code, "message": "x"}
     }
+
+
+def test_authorization_bearer_token_accepted(settings):
+    bearer_header = {"Authorization": "Bearer test-key"}
+    response = client(settings).post("/v1/reviews", json=BODY, headers=bearer_header)
+    assert response.status_code == 200
+
+
+@pytest.mark.parametrize("path", ["/v1/reviews", "/api/reviews", "/reviews", "/review"])
+def test_route_aliases_work(settings, path):
+    response = client(settings).post(path, json=BODY, headers=HEADERS)
+    assert response.status_code == 200
+
+
+def test_dotnet_input_json_format_accepted(settings):
+    diff = (
+        "diff --git a/server/GitSight.Api/Controllers/UsersController.cs "
+        "b/server/GitSight.Api/Controllers/UsersController.cs\n"
+        "@@ -1,2 +1,3 @@\n-old\n+new"
+    )
+    payload = {
+        "diff_text": diff,
+        "pr_title": "Fix user lookup by ID",
+        "pr_description": "Switched from FindAsync to raw SQL for performance reasons.",
+    }
+    response = client(settings).post("/api/reviews", json=payload, headers=HEADERS)
+    assert response.status_code == 200
+
+
+def test_github_structured_files_input_accepted(settings):
+    payload = {
+        "repository": {"owner": "abc", "name": "my-project"},
+        "pullRequest": {"number": 41, "title": "Add authentication"},
+        "files": [
+            {
+                "path": "AuthService.cs",
+                "patch": "@@ -10,3 +10,4 @@\n context\n+new_line\n",
+                "status": "modified",
+            }
+        ],
+    }
+    response = client(settings).post("/api/reviews", json=payload, headers=HEADERS)
+    assert response.status_code == 200
+
+
+def test_response_contains_architecture_changes_fields(settings):
+    response = client(settings).post("/v1/reviews", json=BODY, headers=HEADERS)
+    data = response.json()
+    assert "reviewId" in data
+    assert data["status"] == "completed"
+    assert "summary" in data
+    for k in ("totalIssues", "critical", "high", "medium", "low"):
+        assert k in data["summary"]
+
