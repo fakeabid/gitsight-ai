@@ -14,7 +14,29 @@ from app.domain.diff_chunker import (
 )
 from tests.helpers import make_new_file_diff
 
-NOISE = list(DEFAULT_NOISE_PATTERNS)
+NOISE = [
+    "package-lock.json",
+    "yarn.lock",
+    "pnpm-lock.yaml",
+    "composer.lock",
+    "Cargo.lock",
+    "packages.lock.json",
+    ".Designer.cs",
+    ".generated.cs",
+    ".min.js",
+    ".min.css",
+    ".map",
+    "/Migrations/",
+    "dist/",
+    "build/",
+    "bin/",
+    "obj/",
+    ".svg",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".ico",
+]
 SAMPLE = Path(__file__).parent / "fixtures" / "sample_pr.diff"
 
 
