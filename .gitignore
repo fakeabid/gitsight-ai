@@ -1,9 +1,11 @@
+# Byte-compiled / optimized / C-extensions
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-env/
+
+# Distribution / packaging
 build/
 develop-eggs/
 dist/
@@ -16,16 +18,81 @@ parts/
 sdist/
 var/
 wheels/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
+# Environment and secrets
 .env
-.venv
+.env.*
+.env*.local
+!.env.example
+!.env.sample
+!.env.template
+
+# Virtual Environments
+.venv/
 venv/
 ENV/
+env/
+env.bak/
+venv.bak/
 
+# Unit test / coverage / linting caches
 .pytest_cache/
 .coverage
+.coverage.*
+nosetests.xml
+coverage.xml
 htmlcov/
+.tox/
+.nox/
+.hypothesis/
 .ruff_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+
+# Logs and databases
+*.log
+logs/
+*.sqlite
+*.sqlite3
+*.db
+
+# Operating System files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+[Dd]esktop.ini
+
+# IDEs, Editors, and AI tools
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.cursor/
+.gemini/
+.antigravity/
+*.sublime-workspace
+*.sublime-project
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+
+# Temporary / Scratch
+*.tmp
+*.bak
+tmp/
+temp/
+
+*.diff
