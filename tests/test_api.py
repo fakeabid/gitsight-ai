@@ -13,8 +13,10 @@ HEADERS = {"X-API-Key": "test-key"}
 class StubService:
     def __init__(self, error: Exception | None = None) -> None:
         self.error = error
+        self.last_request = None
 
     async def review(self, request):
+        self.last_request = request
         if self.error:
             raise self.error
         return build_result(
@@ -152,4 +154,40 @@ def test_response_contains_architecture_changes_fields(settings):
     assert "summary" in data
     for k in ("totalIssues", "critical", "high", "medium", "low"):
         assert k in data["summary"]
+
+
+def test_custom_rules_normalization(settings):
+    service = StubService()
+    test_client = TestClient(create_app(settings=settings, review_service=service))
+
+    # Test list of string rules with camelCase 'customRules'
+    payload = {
+        "prTitle": "Test PR",
+        "diff": "diff --git a/a b/a\n",
+        "customRules": [
+            "  Rule 1  ",
+            "Rule 2",
+        ],
+    }
+    res = test_client.post("/v1/reviews", json=payload, headers=HEADERS)
+    assert res.status_code == 200
+    assert service.last_request.custom_rules == ["Rule 1", "Rule 2"]
+
+    # Test list of objects with 'rulePrompt'
+    payload_obj = {
+        "pr_title": "Test PR",
+        "diff": "diff --git a/a b/a\n",
+        "rules": [
+            {"rulePrompt": "No raw SQL"},
+            {"prompt": "Use async/await"},
+            {"rule": "Public methods require docstrings"},
+        ],
+    }
+    res = test_client.post("/v1/reviews", json=payload_obj, headers=HEADERS)
+    assert res.status_code == 200
+    assert service.last_request.custom_rules == [
+        "No raw SQL",
+        "Use async/await",
+        "Public methods require docstrings",
+    ]
 

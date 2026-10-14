@@ -68,14 +68,39 @@ Review the added lines ('+') and modified logic carefully for:
   - "Low": Minor code smell, missing cleanup, or non-critical improvement.
 - If the diff has high quality with no defects, report an empty issues list with a positive
   executive_summary. But do NOT ignore legitimate bugs, security concerns, or poor practices.
+
+## 4. STRICT REPOSITORY-SPECIFIC CUSTOM RULES
+- In addition to standard checks, the user has defined mandatory custom review rules for this repository.
+- You MUST treat these rules as non-negotiable, strict constraints.
+- Any violation of a custom rule MUST be reported as an issue in the issues list.
+- In the issue "comment", explicitly state which custom rule was breached and how to fix it according to that rule.
+- If a custom rule contradicts a general best practice, the custom rule ALWAYS takes precedence.
 """
 
 
-def build_review_user_message(chunk: Chunk, pr_title: str, pr_description: str | None) -> str:
+def build_review_user_message(
+    chunk: Chunk,
+    pr_title: str,
+    pr_description: str | None,
+    custom_rules: list[str] | None = None,
+) -> str:
     files = "\n".join(f"- {path}" for path in chunk.file_paths)
+
+    # Format custom rules block
+    rules_block = ""
+    if custom_rules and len(custom_rules) > 0:
+        rules_list = "\n".join(f"  [{idx + 1}] {rule}" for idx, rule in enumerate(custom_rules))
+        rules_block = (
+            "===========================================================\n"
+            "MANDATORY CUSTOM REPOSITORY RULES (STRICT COMPLIANCE REQUIRED):\n"
+            f"{rules_list}\n"
+            "===========================================================\n\n"
+        )
+
     return (
         f"PULL REQUEST TITLE: {pr_title} (Part {chunk.index} of {chunk.total})\n"
-        f"PULL REQUEST DESCRIPTION: {pr_description or 'No description provided.'}\n"
-        f"FILES IN THIS PART:\n{files}\n"
+        f"PULL REQUEST DESCRIPTION: {pr_description or 'No description provided.'}\n\n"
+        f"{rules_block}"
+        f"FILES IN THIS PART:\n{files}\n\n"
         f"UNIFIED DIFF:\n{chunk.text}"
     )

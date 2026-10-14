@@ -27,7 +27,10 @@ def build_prompt(state: ChunkState) -> dict:
             SystemMessage(content=REVIEW_SYSTEM_PROMPT),
             HumanMessage(
                 content=build_review_user_message(
-                    chunk, state["pr_title"], state.get("pr_description")
+                    chunk=chunk,
+                    pr_title=state["pr_title"],
+                    pr_description=state.get("pr_description"),
+                    custom_rules=state.get("custom_rules"),
                 )
             ),
         ],

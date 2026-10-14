@@ -24,6 +24,7 @@ class ReviewService:
         initial = {
             "pr_title": request.pr_title,
             "pr_description": request.pr_description,
+            "custom_rules": request.custom_rules,
             "raw_diff": request.diff,
         }
         config = {"max_concurrency": self._settings.max_concurrency, "run_name": "pr_review"}

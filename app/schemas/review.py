@@ -11,6 +11,7 @@ class ReviewRequest(CamelModel):
     pr_title: str = Field(min_length=1, max_length=500)
     pr_description: str | None = None
     diff: str = Field(min_length=1)
+    custom_rules: list[str] = Field(default_factory=list)
     repository: dict[str, Any] | None = None
     pull_request: dict[str, Any] | None = None
     files: list[dict[str, Any]] | None = None
@@ -71,6 +72,24 @@ class ReviewRequest(CamelModel):
                         extracted_path = m.group(1).strip()
                         diff = f"diff --git a/{extracted_path} b/{extracted_path}\n{diff}"
                 data["diff"] = diff
+
+            # Resolve Custom Rules (handles custom_rules, customRules, or rules)
+            raw_rules = (
+                data.get("custom_rules")
+                or data.get("customRules")
+                or data.get("rules")
+                or []
+            )
+            cleaned_rules: list[str] = []
+            if isinstance(raw_rules, list):
+                for r in raw_rules:
+                    if isinstance(r, str) and r.strip():
+                        cleaned_rules.append(r.strip())
+                    elif isinstance(r, dict):
+                        prompt = r.get("rulePrompt") or r.get("prompt") or r.get("rule")
+                        if prompt and isinstance(prompt, str) and prompt.strip():
+                            cleaned_rules.append(prompt.strip())
+            data["custom_rules"] = cleaned_rules
 
         return data
 

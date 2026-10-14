@@ -25,6 +25,7 @@ class ChunkOutcome:
 class ReviewState(TypedDict, total=False):
     pr_title: str
     pr_description: str | None
+    custom_rules: list[str]
     raw_diff: str
     chunks: list[Chunk]
     skipped_files: list[SkippedFile]
@@ -33,12 +34,13 @@ class ReviewState(TypedDict, total=False):
     result: ReviewResult
 
 
-class ChunkInput(TypedDict):
+class ChunkInput(TypedDict, total=False):
     """Payload of Send("analyze_chunk", ...)."""
 
     chunk: Chunk
     pr_title: str
     pr_description: str | None
+    custom_rules: list[str]
 
 
 class ChunkOutput(TypedDict):

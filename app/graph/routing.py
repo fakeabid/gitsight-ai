@@ -15,6 +15,7 @@ def dispatch_chunks(state: ReviewState) -> list[Send | str]:
                 "chunk": chunk,
                 "pr_title": state["pr_title"],
                 "pr_description": state.get("pr_description"),
+                "custom_rules": state.get("custom_rules", []),
             },
         )
         for chunk in chunks
