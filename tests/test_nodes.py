@@ -16,7 +16,8 @@ from tests.helpers import FakeLLM, make_new_file_diff
 
 
 def test_prepare_chunks_node(settings):
-    prepare = make_prepare_chunks(settings)
+    test_settings = settings.model_copy(update={"noise_patterns": ["package-lock.json"]})
+    prepare = make_prepare_chunks(test_settings)
     diff = (
         make_new_file_diff("src/a.py", ["x = 1"])
         + make_new_file_diff("package-lock.json", ["{}"])

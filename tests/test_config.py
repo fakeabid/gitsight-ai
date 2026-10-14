@@ -12,7 +12,7 @@ def test_default_values_match_csharp_ports():
     )
     assert s.max_chunk_chars == 15_000
     assert s.max_total_chunks == 5
-    assert len(s.noise_patterns) == 21
+    assert len(s.noise_patterns) == 0
     assert s.noise_patterns == list(DEFAULT_NOISE_PATTERNS)
     assert s.gemini_temperature == 0.2
     assert s.gemini_model == "gemini-3.8-flash"

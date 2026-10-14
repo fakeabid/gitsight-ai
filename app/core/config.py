@@ -7,30 +7,8 @@ from typing import Annotated
 from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
-# Ported 1:1 from the C# GeminiService.NoiseFilePatterns.
-DEFAULT_NOISE_PATTERNS: tuple[str, ...] = (
-    "package-lock.json",
-    "yarn.lock",
-    "pnpm-lock.yaml",
-    "composer.lock",
-    "Cargo.lock",
-    "packages.lock.json",
-    ".Designer.cs",
-    ".generated.cs",
-    ".min.js",
-    ".min.css",
-    ".map",
-    "/Migrations/",
-    "dist/",
-    "build/",
-    "bin/",
-    "obj/",
-    ".svg",
-    ".png",
-    ".jpg",
-    ".jpeg",
-    ".ico",
-)  # fmt: skip
+# Noise patterns are managed via custom repository rules in DB. Default list is empty.
+DEFAULT_NOISE_PATTERNS: tuple[str, ...] = ()
 
 
 def _split_csv(value: object) -> object:

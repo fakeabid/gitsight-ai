@@ -71,9 +71,10 @@ async def test_one_failing_chunk_gives_a_partial_result(settings):
 
 
 async def test_noise_only_diff_makes_no_llm_call(settings):
+    test_settings = settings.model_copy(update={"noise_patterns": ["package-lock.json"]})
     chunk_llm = FakeLLM(per_path_review)
     graph = build_review_graph(
-        settings=settings, chunk_llm=chunk_llm, summary_llm=FakeLLM(lambda m: None)
+        settings=test_settings, chunk_llm=chunk_llm, summary_llm=FakeLLM(lambda m: None)
     )
     result = await run(graph, make_new_file_diff("package-lock.json", ["{}"]))
     assert chunk_llm.calls == 0 and result.issues == [] and result.meta.chunk_count == 0
